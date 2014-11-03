@@ -1,4 +1,4 @@
----
+Ôªø---
 layout: default
 ---
 # Test
@@ -9,7 +9,7 @@ This easy test has:
  - [Inspiration](http://jbt.github.io/markdown-editor/).
  
 ### Things to remember:
- * My name is Ari·n JimÈnez MajidÌ.
+ * My name is Ari√°n Jim√©nez Majid√≠.
  * I'm a Computer Engineer.
  * I'm pursuing a MSc in Artificial Intelligence.
 
