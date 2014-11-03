@@ -12,8 +12,3 @@ This easy test has:
  * My name is Arián Jiménez Majidí.
  * I'm a Computer Engineer.
  * I'm pursuing a MSc in Artificial Intelligence.
-
-And of course:
-```
-print 'Hello World!';
-```
