@@ -6,4 +6,4 @@ layout: default
 First of all, hello world!
 
 ### Sections
-[About](https://arianjm.github.io/about).
+[About](https://arianjm.github.io/about/).
