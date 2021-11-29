@@ -59,7 +59,6 @@ function plot({ endtime, signals, timescale }) {
         text,
     }));
 
-    debugger;
     Plotly.newPlot(document.getElementById('plot'), data, layout);
 }
 
