@@ -1,30 +1,42 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const redLine = { line: { color: 'red', width: 1 } };
 
-plot(pyComplexVcdJson);
+const initialScale = pyComplexVcdJson.endtime / 1000;
+const initialRange = [ 0, pyComplexVcdJson.endtime ];
 
-function plot({ endtime, signals, timescale }) {
+let { data, layout } = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+
+const plotElement = document.getElementById('plot');
+
+Plotly.newPlot(plotElement, data, layout);
+plotElement.on('plotly_relayout', eventData => {
+    const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
+    const scale = (range[1] - range[0]) / 1000;
+    const stuff = plot(pyComplexVcdJson, isNaN(scale) ? initialScale : scale, { range });
+
+    Plotly.react(plotElement, stuff.data, stuff.layout);
+});
+
+function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
     const numSignals = Object.keys(signals).length;
     const layout = {
         height: numSignals * 50,
         hovermode: 'closest',
         hoverinfo: 'none',
         margin: { t: 50, b: 5, l: 200 },
-        paper_bgcolor: 'white',
-        plot_bgcolor: 'white',
         showlegend: false,
         xaxis: {
             automargin: true,
             rangemode: 'nonnegative',
+            range,
             showgrid: false,
             showline: false,
             showspikes: true,
-            spikecolor: 'yellow',
+            spikecolor: 'orange',
             spikedash: 'solid',
             spikemode: 'across',
             spikesnap: 'cursor',
-            spikethickness: 2,
-            tickfont: { color: 'black' },
+            spikethickness: 1,
             title: { text: `Time (${timescale})` },
         },
     };
@@ -33,8 +45,8 @@ function plot({ endtime, signals, timescale }) {
     const allShapes = [];
 
     const data = Object.values(signals).flatMap(({ nets: [ { hier, name, size, type } ], tv }, index) => {
-        const module = hier.replace('testbench', '');
-        const graphName = `${module.startsWith('.') ? module.substr(1) : module} ${name}`.replace('testbench', '');
+        const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
+        const graphName = module ? `${module}/${name}` : name;
         annotationTexts.push(graphName);
 
         const sizeInt = parseInt(size, 10);
@@ -50,7 +62,7 @@ function plot({ endtime, signals, timescale }) {
             return binarySignal.data;
         }
 
-        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, index, name: graphName, size, timescale, tv });
+        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, index, name: graphName, size, timescale, tv, zoomFactor });
 
         allShapes.push(...vectorSignal.shapes);
 
@@ -69,15 +81,15 @@ function plot({ endtime, signals, timescale }) {
     }));
     layout.shapes = allShapes;
 
-    Plotly.newPlot(document.getElementById('plot'), data, layout);
+    return { data, layout };
 }
 
-function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescale, tv }) {
+function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescale, tv, zoomFactor }) {
     const shapes = [];
+    const vectorShapes = [];
     const [ text, textposition ] = [ [], [] ];
     const [ x, y ] = [ [], [] ];
     let previousYStr = null;
-    const zoomFactor = (endtime - 0) / 100000;
     const yaxis = `y${index + 1}`;
 
     let lastXInt = null;
@@ -99,7 +111,7 @@ function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescal
                 }
                 // Previous state wasn't undefined. Close previous shape.
                 else {
-                    shapes[shapes.length - 1].path += closeShape;
+                    vectorShapes[vectorShapes.length - 1] += closeShape;
                 }
             }
 
@@ -114,11 +126,11 @@ function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescal
                 }
                 // Previous state wasn't undefined. Close previous shape.
                 else {
-                    shapes[shapes.length - 1].path += closeShape;
+                    vectorShapes[vectorShapes.length - 1] += closeShape;
                 }
             }
 
-            shapes.push({ line: { color: 'lightgreen', width: 1 }, path: openShape, type: 'path', yref: yaxis });
+            vectorShapes.push(openShape);
         }
 
         x.push(xInt);
@@ -127,7 +139,7 @@ function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescal
         const numLeadingZeroes = size - yStr.length;
         const leadingZeroes = isNaN(yStr) ? '' : '0'.repeat(numLeadingZeroes);
 
-        text.push(`${leadingZeroes}${isNaN(yStr) ? '' : yStr}`);
+        text.push(`  ${leadingZeroes}${isNaN(yStr) ? '' : yStr}`);
         textposition.push('right center');
 
         lastXInt = xInt;
@@ -139,8 +151,10 @@ function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescal
         shapes[shapes.length - 1].x1 += lastXInt;
     }
     else {
-        shapes[shapes.length - 1].path += ` H${endtime - zoomFactor} L${endtime},0.5 L${endtime - zoomFactor},0 Z`;
+        vectorShapes[vectorShapes.length - 1] += ` H${endtime - zoomFactor} L${endtime},0.5 L${endtime - zoomFactor},0 Z`;
     }
+
+    shapes.push({ line: { color: 'lightgreen', width: 1 }, path: vectorShapes.join(' '), type: 'path', yref: yaxis });
 
     const hovertemplate = `${name} @ %{x:.0f} ${timescale.substr(1)}<br>%{text}`;
 
@@ -222,6 +236,7 @@ function makeBinarySignal({ endtime, index, name, timescale, tv }) {
     // Stretch final result to the end of time.
     x.push(endtime);
     y.push(0.5);
+    text.push(previousYStr);
 
     const hovertemplate = `${name} @ %{x:.0f} ${timescale.substr(1)}<br>%{text}`;
 
@@ -249,7 +264,7 @@ function makeYAxisLayout({ fractionOfPlot, index }) {
         range: [ -0.3, 1.3 ],
         showgrid: false,
         showticklabels: false,
-        zeroline: false,
+        zeroline: index === 0,
     };
 }
 
