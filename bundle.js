@@ -1,14 +1,14 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-
-const signalNames = Object.values(pyComplexVcdJson.signals).map(({ nets: [ { hier, name } ] }) => {
+const vcd = pyComplexVcdJson;
+const signalNames = Object.values(vcd.signals).map(({ nets: [ { hier, name } ] }) => {
     const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
     return module ? `${module}/${name}` : name;
 });
 
 const plotElement = document.getElementById('plot');
-const initialScale = pyComplexVcdJson.endtime / 500;
+const initialScale = vcd.endtime / 500;
 const redLine = { line: { color: 'red', width: 1 } };
-const initialRange = [ 0, pyComplexVcdJson.endtime ];
+const initialRange = [ 0, vcd.endtime ];
 
 signalNames.forEach(name => {
     const label = document.createElement('label');
@@ -17,7 +17,7 @@ signalNames.forEach(name => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
     checkbox.addEventListener('change', () => {
-        const stuff = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+        const stuff = plot(vcd, initialScale, { range: initialRange });
 
         Plotly.react(plotElement, stuff.data, stuff.layout);
     });
@@ -27,13 +27,13 @@ signalNames.forEach(name => {
 });
 
 // Plot setup.
-let { data, layout } = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+let { data, layout } = plot(vcd, initialScale, { range: initialRange });
 
 Plotly.newPlot(plotElement, data, layout, { modeBarButtonsToRemove: [ 'select2d', 'lasso2d',  ] });
 plotElement.on('plotly_relayout', eventData => {
     const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
     const scale = (range[1] - range[0]) / 500;
-    const stuff = plot(pyComplexVcdJson, isNaN(scale) ? initialScale : scale, { range });
+    const stuff = plot(vcd, isNaN(scale) ? initialScale : scale, { range });
 
     Plotly.react(plotElement, stuff.data, stuff.layout);
 });
@@ -43,7 +43,7 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
     const numShownSignals = labels.filter(label => label.getElementsByTagName('input')[0].checked).length;
     const fractionOfPlot = 1 / numShownSignals;
     const layout = {
-        height: numShownSignals * 50,
+        height: Math.max(numShownSignals * 50, 250),
         hovermode: 'closest',
         hoverinfo: 'none',
         margin: { t: 50, b: 5, l: 200 },
