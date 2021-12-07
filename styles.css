@@ -1,0 +1,14 @@
+#signal-selection {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+label {
+    width: max-content;
+    margin: 0 12px 12px 0;
+}
+
+input[type=checkbox] {
+    margin-right: 8px;
+}

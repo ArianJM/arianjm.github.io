@@ -1,68 +1,100 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const redLine = { line: { color: 'red', width: 1 } };
 
-const initialScale = pyComplexVcdJson.endtime / 1000;
-const initialRange = [ 0, pyComplexVcdJson.endtime ];
-
-let { data, layout } = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+const signalNames = Object.values(pyComplexVcdJson.signals).map(({ nets: [ { hier, name } ] }) => {
+    const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
+    return module ? `${module}/${name}` : name;
+});
 
 const plotElement = document.getElementById('plot');
+const initialScale = pyComplexVcdJson.endtime / 500;
+const redLine = { line: { color: 'red', width: 1 } };
+const initialRange = [ 0, pyComplexVcdJson.endtime ];
 
-Plotly.newPlot(plotElement, data, layout);
+signalNames.forEach(name => {
+    const label = document.createElement('label');
+    const checkbox = document.createElement('input')
+
+    checkbox.type = 'checkbox';
+    checkbox.checked = true;
+    checkbox.addEventListener('change', () => {
+        const stuff = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+
+        Plotly.react(plotElement, stuff.data, stuff.layout);
+    });
+    label.appendChild(checkbox);
+    label.append(name);
+    document.getElementById('signal-selection').appendChild(label);
+});
+
+// Plot setup.
+let { data, layout } = plot(pyComplexVcdJson, initialScale, { range: initialRange });
+
+Plotly.newPlot(plotElement, data, layout, { modeBarButtonsToRemove: [ 'select2d', 'lasso2d',  ] });
 plotElement.on('plotly_relayout', eventData => {
     const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
-    const scale = (range[1] - range[0]) / 1000;
+    const scale = (range[1] - range[0]) / 500;
     const stuff = plot(pyComplexVcdJson, isNaN(scale) ? initialScale : scale, { range });
 
     Plotly.react(plotElement, stuff.data, stuff.layout);
 });
 
 function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
-    const numSignals = Object.keys(signals).length;
+    const labels = Array.from(document.getElementsByTagName('label'));
+    const numShownSignals = labels.filter(label => label.getElementsByTagName('input')[0].checked).length;
+    const fractionOfPlot = 1 / numShownSignals;
     const layout = {
-        height: numSignals * 50,
+        height: numShownSignals * 50,
         hovermode: 'closest',
         hoverinfo: 'none',
         margin: { t: 50, b: 5, l: 200 },
         showlegend: false,
         xaxis: {
             automargin: true,
+            exponentformat: 'none',
             rangemode: 'nonnegative',
             range,
             showgrid: false,
             showline: false,
             showspikes: true,
+            showticksuffix: 'all',
             spikecolor: 'orange',
             spikedash: 'solid',
             spikemode: 'across',
             spikesnap: 'cursor',
             spikethickness: 1,
+            ticksuffix: ` ${timescale.substr(1)}`,
             title: { text: `Time (${timescale})` },
         },
     };
-    const fractionOfPlot = 1 / numSignals;
     const annotationTexts = [];
     const allShapes = [];
+    let yAxisNumber = 0;
 
     const data = Object.values(signals).flatMap(({ nets: [ { hier, name, size, type } ], tv }, index) => {
         const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
         const graphName = module ? `${module}/${name}` : name;
+        const label = labels.find(label => label.textContent === graphName);
+
+        if (label && !label.getElementsByTagName('input')[0].checked) {
+            debugger;
+            return null;
+        }
         annotationTexts.push(graphName);
 
         const sizeInt = parseInt(size, 10);
-        const yAxisNumber = index + 1;
 
-        layout[`yaxis${yAxisNumber}`] = makeYAxisLayout({ fractionOfPlot, index });
+        yAxisNumber++;
+        layout[`yaxis${yAxisNumber}`] = makeYAxisLayout({ fractionOfPlot, index: yAxisNumber - 1 });
 
         if (parseInt(size, 10) === 1) {
-            const binarySignal = makeBinarySignal({ endtime, fractionOfPlot, index, name: graphName, timescale, tv });
+            const binarySignal = makeBinarySignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, timescale, tv });
 
             allShapes.push(...binarySignal.shapes);
 
             return binarySignal.data;
         }
 
-        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, index, name: graphName, size, timescale, tv, zoomFactor });
+        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, size, timescale, tv, zoomFactor });
 
         allShapes.push(...vectorSignal.shapes);
 
@@ -84,13 +116,13 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
     return { data, layout };
 }
 
-function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescale, tv, zoomFactor }) {
+function makeVectorSignal({ endtime, fractionOfPlot, name, size, timescale, tv, yAxisNumber, zoomFactor }) {
     const shapes = [];
     const vectorShapes = [];
     const [ text, textposition ] = [ [], [] ];
     const [ x, y ] = [ [], [] ];
     let previousYStr = null;
-    const yaxis = `y${index + 1}`;
+    const yaxis = `y${yAxisNumber}`;
 
     let lastXInt = null;
     let shapeMiddle = null;
@@ -175,13 +207,13 @@ function makeVectorSignal({ endtime, fractionOfPlot, index, name, size, timescal
     };
 }
 
-function makeBinarySignal({ endtime, index, name, timescale, tv }) {
+function makeBinarySignal({ endtime, name, timescale, tv, yAxisNumber }) {
     const shapes = [];
     const [ text, textposition ] = [ [], [] ];
     const [ x, y ] = [ [], [] ];
     const [ undefinedX, undefinedY ] = [ [], [] ];
     let previousYStr = null;
-    const yaxis = `y${index + 1}`;
+    const yaxis = `y${yAxisNumber}`;
     const greenLine = { line: { color: 'green', width: 1 }, type: 'line' };
 
     tv.forEach(([ xInt, yStr ], signalChangeIndex) => {
