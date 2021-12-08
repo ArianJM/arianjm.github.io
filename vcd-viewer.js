@@ -5,7 +5,10 @@ const signalNames = Object.values(vcd.signals).map(({ nets: [ { hier, name } ] }
 });
 
 const plotElement = document.getElementById('plot');
-const initialScale = vcd.endtime / 500;
+const { minChange, unit, scale } = updateTimescale(vcd);
+vcd.timescale = `1${scale}`;
+
+const initialZoomFactor = vcd.endtime / 500;
 const redLine = { line: { color: 'red', width: 1 } };
 const initialRange = [ 0, vcd.endtime ];
 
@@ -16,7 +19,8 @@ signalNames.forEach(name => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
     checkbox.addEventListener('change', () => {
-        const stuff = plot(vcd, initialScale, { range: initialRange });
+        debugger;
+        const stuff = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
 
         Plotly.react(plotElement, stuff.data, stuff.layout);
     });
@@ -26,18 +30,62 @@ signalNames.forEach(name => {
 });
 
 // Plot setup.
-let { data, layout } = plot(vcd, initialScale, { range: initialRange });
+let { data, layout } = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
 
 Plotly.newPlot(plotElement, data, layout, { modeBarButtonsToRemove: [ 'select2d', 'lasso2d',  ] });
 plotElement.on('plotly_relayout', eventData => {
     const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
-    const scale = (range[1] - range[0]) / 500;
-    const stuff = plot(vcd, isNaN(scale) ? initialScale : scale, { range });
+    const zoomFactor = (range[1] - range[0]) / 500;
+    const stuff = plot(vcd, isNaN(zoomFactor) ? initialZoomFactor : zoomFactor, { range });
 
     Plotly.react(plotElement, stuff.data, stuff.layout);
 });
 
-function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
+function updateTimescale({ signals, timescale }) {
+    const timescaleRegex = /(\d+)\s*(\w+)/;
+    const [ match, unitStr, scale ] = timescaleRegex.exec(timescale);
+    const unit = parseInt(unitStr, 10);
+
+    if (unit > 1) {
+        Object.values(signals).forEach(signal => {
+            for (let i = 0; i < signal.tv.length; i++) {
+                signal.tv[i][0] *= unit;
+            }
+        });
+    }
+
+    const scales = [ 's', 'ms', 'us', 'ns', 'ps', 'fs' ];
+    const scaleIndex = scales.indexOf(scale);
+    let scaleJump = 0;
+    let minChange = getMinChange(signals);
+
+    while (((minChange % 1000) === 0) && (scaleJump < scaleIndex)) {
+        divideSignalValues(signals, 1000);
+        vcd.endtime /= 1000;
+        minChange = getMinChange(signals);
+        scaleJump++;
+    }
+
+    return { minChange, scale: scales[scaleIndex - scaleJump] };
+}
+
+function getMinChange(signals) {
+    return Math.min(...Object.values(signals).map(({ tv }) => {
+        return Math.min(...tv.map((curr, index) => {
+            return index ? (curr[0] - tv[index - 1][0]) : 0;
+        }).filter(num => num > 0));
+    }));
+}
+
+function divideSignalValues(signals, divisor) {
+    Object.values(signals).forEach(({ tv }) => {
+        tv.forEach(val => {
+            val[0] /= divisor;
+        });
+    });
+}
+
+function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
     const labels = Array.from(document.getElementsByTagName('label'));
     const numShownSignals = labels.filter(label => label.getElementsByTagName('input')[0].checked).length;
     const fractionOfPlot = 1 / numShownSignals;
@@ -61,8 +109,8 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
             spikemode: 'across',
             spikesnap: 'cursor',
             spikethickness: 1,
-            ticksuffix: ` ${timescale.substr(1)}`,
-            title: { text: `Time (${timescale})` },
+            ticksuffix: ` ${scale}`,
+            title: { text: `Time` },
         },
     };
     const annotationTexts = [];
@@ -75,7 +123,6 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
         const label = labels.find(label => label.textContent === graphName);
 
         if (label && !label.getElementsByTagName('input')[0].checked) {
-            debugger;
             return null;
         }
         annotationTexts.push(graphName);
@@ -86,14 +133,14 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
         layout[`yaxis${yAxisNumber}`] = makeYAxisLayout({ fractionOfPlot, index: yAxisNumber - 1 });
 
         if (parseInt(size, 10) === 1) {
-            const binarySignal = makeBinarySignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, timescale, tv });
+            const binarySignal = makeBinarySignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, scale, tv });
 
             allShapes.push(...binarySignal.shapes);
 
             return binarySignal.data;
         }
 
-        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, size, timescale, tv, zoomFactor });
+        const vectorSignal = makeVectorSignal({ endtime, fractionOfPlot, yAxisNumber, name: graphName, scale, size, tv, zoomFactor });
 
         allShapes.push(...vectorSignal.shapes);
 
@@ -115,7 +162,7 @@ function plot({ endtime, signals, timescale }, zoomFactor, { range }) {
     return { data, layout };
 }
 
-function makeVectorSignal({ endtime, fractionOfPlot, name, size, timescale, tv, yAxisNumber, zoomFactor }) {
+function makeVectorSignal({ endtime, fractionOfPlot, name, size, tv, yAxisNumber, zoomFactor }) {
     const shapes = [];
     const vectorShapes = [];
     const [ text, textposition ] = [ [], [] ];
@@ -187,7 +234,7 @@ function makeVectorSignal({ endtime, fractionOfPlot, name, size, timescale, tv, 
 
     shapes.push({ line: { color: 'lightgreen', width: 1 }, path: vectorShapes.join(' '), type: 'path', yref: yaxis });
 
-    const hovertemplate = `${name} @ %{x:.0f} ${timescale.substr(1)}<br>%{text}`;
+    const hovertemplate = `${name} @ %{x:.0f} ${scale}<br>%{text}`;
 
     return {
         data: {
@@ -206,7 +253,7 @@ function makeVectorSignal({ endtime, fractionOfPlot, name, size, timescale, tv, 
     };
 }
 
-function makeBinarySignal({ endtime, name, timescale, tv, yAxisNumber }) {
+function makeBinarySignal({ endtime, name, tv, yAxisNumber }) {
     const shapes = [];
     const [ text, textposition ] = [ [], [] ];
     const [ x, y ] = [ [], [] ];
@@ -269,7 +316,7 @@ function makeBinarySignal({ endtime, name, timescale, tv, yAxisNumber }) {
     y.push(0.5);
     text.push(previousYStr);
 
-    const hovertemplate = `${name} @ %{x:.0f} ${timescale.substr(1)}<br>%{text}`;
+    const hovertemplate = `${name} @ %{x:.0f} ${scale}<br>%{text}`;
 
     return {
         data: {
