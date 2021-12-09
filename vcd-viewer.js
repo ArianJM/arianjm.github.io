@@ -19,7 +19,6 @@ signalNames.forEach(name => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
     checkbox.addEventListener('change', () => {
-        debugger;
         const stuff = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
 
         Plotly.react(plotElement, stuff.data, stuff.layout);
@@ -31,14 +30,20 @@ signalNames.forEach(name => {
 
 // Plot setup.
 let { data, layout } = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
+let dragmode = 'select';
 
-Plotly.newPlot(plotElement, data, layout, { modeBarButtonsToRemove: [ 'select2d', 'lasso2d',  ] });
+Plotly.newPlot(plotElement, data, layout, { displaylogo: false, modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ] });
 plotElement.on('plotly_relayout', eventData => {
+    if (eventData.hasOwnProperty('dragmode')) {
+        dragmode = eventData.dragmode;
+        return;
+    }
+
     const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
     const zoomFactor = (range[1] - range[0]) / 500;
     const stuff = plot(vcd, isNaN(zoomFactor) ? initialZoomFactor : zoomFactor, { range });
 
-    Plotly.react(plotElement, stuff.data, stuff.layout);
+    Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode }, );
 });
 
 function updateTimescale({ signals, timescale }) {
