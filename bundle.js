@@ -123,7 +123,7 @@ function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
     const allShapes = [];
     let yAxisNumber = 0;
 
-    const data = Object.values(signals).flatMap(({ nets: [ { hier, name, size, type } ], tv }, index) => {
+    const data = Object.values(signals).reverse().flatMap(({ nets: [ { hier, name, size, type } ], tv }, index) => {
         const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
         const graphName = module ? `${module}/${name}` : name;
         const label = labels.find(label => label.textContent === graphName);
