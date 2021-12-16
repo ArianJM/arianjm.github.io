@@ -10,7 +10,7 @@ const { minChange, unit, scale } = updateTimescale(vcd);
 vcd.timescale = `1${scale}`;
 
 const initialZoomFactor = vcd.endtime / 500;
-const redLine = { line: { color: 'red', width: 1 } };
+const redLine = { line: { color: 'red', width: 1.5 } };
 const initialRange = [ 0, vcd.endtime ];
 const grey = {
     light: '#939292',
