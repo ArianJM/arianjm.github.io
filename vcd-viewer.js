@@ -11,6 +11,10 @@ vcd.timescale = `1${scale}`;
 const initialZoomFactor = vcd.endtime / 500;
 const redLine = { line: { color: 'red', width: 1 } };
 const initialRange = [ 0, vcd.endtime ];
+const grey = {
+    light: '#939292',
+    dark: '#252424',
+};
 
 signalNames.forEach(name => {
     const label = document.createElement('label');
@@ -237,7 +241,7 @@ function makeVectorSignal({ endtime, fractionOfPlot, name, size, tv, yAxisNumber
         vectorShapes[vectorShapes.length - 1] += ` H${endtime - zoomFactor} L${endtime},0.5 L${endtime - zoomFactor},0 Z`;
     }
 
-    shapes.push({ line: { color: 'lightgreen', width: 1 }, path: vectorShapes.join(' '), type: 'path', yref: yaxis });
+    shapes.push({ line: { color: grey.light, width: 1.5 }, path: vectorShapes.join(' '), type: 'path', yref: yaxis });
 
     const hovertemplate = `${name} @ %{x:.0f} ${scale}<br>%{text}`;
 
@@ -265,7 +269,7 @@ function makeBinarySignal({ endtime, name, tv, yAxisNumber }) {
     const [ undefinedX, undefinedY ] = [ [], [] ];
     let previousYStr = null;
     const yaxis = `y${yAxisNumber}`;
-    const greenLine = { line: { color: 'green', width: 1 }, type: 'line' };
+    const greyLine = { line: { color: grey.dark, width: 1.5 }, type: 'line' };
 
     tv.forEach(([ xInt, yStr ], signalChangeIndex) => {
         const yInt = parseInt(yStr, 2)
@@ -293,7 +297,7 @@ function makeBinarySignal({ endtime, name, tv, yAxisNumber }) {
                 // Previous state was undefined. Make green line.
                 if (isNaN(previousYStr)) {
                     shapes[shapes.length - 1].path += ` H ${xInt}`;
-                    shapes.push({ ...greenLine, path: `M ${xInt},0.5 V ${yStr}`, type: 'path', yref: yaxis })
+                    shapes.push({ ...greyLine, path: `M ${xInt},0.5 V ${yStr}`, type: 'path', yref: yaxis })
                 }
                 // Previous state was not undefined. Continue green line.
                 else {
@@ -301,7 +305,7 @@ function makeBinarySignal({ endtime, name, tv, yAxisNumber }) {
                 }
             }
             else {
-                shapes.push({ ...greenLine, path: `M ${xInt},${yInt}`, type: 'path', yref: yaxis });
+                shapes.push({ ...greyLine, path: `M ${xInt},${yInt}`, type: 'path', yref: yaxis });
             }
         }
 
