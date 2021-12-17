@@ -15,6 +15,8 @@ const grey = {
     light: '#939292',
     dark: '#252424',
 };
+let dragmode = 'zoom';
+let zoomFactor = initialZoomFactor;
 
 signalNames.forEach(name => {
     const label = document.createElement('label');
@@ -23,9 +25,9 @@ signalNames.forEach(name => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
     checkbox.addEventListener('change', () => {
-        const stuff = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
+        const stuff = plot(vcd, zoomFactor, { minChange, range: initialRange, scale });
 
-        Plotly.react(plotElement, stuff.data, stuff.layout);
+        Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode });
     });
     label.appendChild(checkbox);
     label.append(name);
@@ -34,7 +36,6 @@ signalNames.forEach(name => {
 
 // Plot setup.
 let { data, layout } = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
-let dragmode = 'select';
 
 Plotly.newPlot(plotElement, data, layout, { displaylogo: false, modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ] });
 plotElement.on('plotly_relayout', eventData => {
@@ -43,9 +44,13 @@ plotElement.on('plotly_relayout', eventData => {
         return;
     }
 
-    const range = eventData.hasOwnProperty('xaxis.range[0]') ? [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ] : initialRange;
-    const zoomFactor = (range[1] - range[0]) / 500;
-    const stuff = plot(vcd, isNaN(zoomFactor) ? initialZoomFactor : zoomFactor, { range });
+    let range = initialRange;
+
+    if (eventData.hasOwnProperty('xaxis.range[0]')) {
+        range = [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ];
+        zoomFactor = (range[1] - range[0]) / 500;
+    }
+    const stuff = plot(vcd, zoomFactor, { range });
 
     Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode }, );
 });
@@ -100,8 +105,9 @@ function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
     const fractionOfPlot = 1 / numShownSignals;
     const layout = {
         height: Math.max(numShownSignals * 50, 250),
-        hovermode: 'closest',
+        hoverdistance: -1,
         hoverinfo: 'none',
+        hovermode: 'closest',
         margin: { t: 50, b: 5, l: 200 },
         showlegend: false,
         xaxis: {
