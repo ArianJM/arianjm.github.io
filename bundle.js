@@ -26,7 +26,7 @@ signalNames.forEach(name => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
     checkbox.addEventListener('change', () => {
-        const stuff = plot(vcd, zoomFactor, { minChange, range: initialRange, scale });
+        const stuff = plot(vcd, zoomFactor, { minChange, range: initialRange.slice(), scale });
 
         Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode });
     });
@@ -36,7 +36,7 @@ signalNames.forEach(name => {
 });
 
 // Plot setup.
-let { data, layout } = plot(vcd, initialZoomFactor, { minChange, range: initialRange, scale });
+let { data, layout } = plot(vcd, initialZoomFactor, { minChange, range: initialRange.slice(), scale });
 
 Plotly.newPlot(plotElement, data, layout, { displaylogo: false, modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ] });
 plotElement.on('plotly_relayout', eventData => {
@@ -45,13 +45,22 @@ plotElement.on('plotly_relayout', eventData => {
         return;
     }
 
-    let range = initialRange;
+    let range = initialRange.slice();
 
     if (eventData.hasOwnProperty('xaxis.range[0]')) {
         range = [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ];
         zoomFactor = (range[1] - range[0]) / 500;
     }
     const stuff = plot(vcd, zoomFactor, { range });
+
+    Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode }, );
+});
+
+plotElement.on('plotly_click', ev => {
+    const xAxis = plotElement._fullLayout.xaxis;
+    const marginLeft = plotElement._fullLayout.margin.l;
+    const cursorLineX = xAxis.p2c(ev.event.layerX - marginLeft);
+    const stuff = plot(vcd, zoomFactor, { cursorLine: cursorLineX });
 
     Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode }, );
 });
@@ -100,7 +109,7 @@ function divideSignalValues(signals, divisor) {
     });
 }
 
-function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
+function plot({ endtime, signals }, zoomFactor, { cursorLine, minChange, range }) {
     const labels = Array.from(document.getElementsByTagName('label'));
     const numShownSignals = labels.filter(label => label.getElementsByTagName('input')[0].checked).length;
     const fractionOfPlot = 1 / numShownSignals;
@@ -121,7 +130,6 @@ function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
             showspikes: true,
             showticksuffix: 'all',
             spikecolor: 'orange',
-            spikedash: 'solid',
             spikemode: 'across',
             spikesnap: 'cursor',
             spikethickness: 1,
@@ -135,13 +143,34 @@ function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
 
     const data = Object.values(signals).reverse().flatMap(({ nets: [ { hier, name, size, type } ], tv }, index) => {
         const module = hier.replace(/testbench\.?/, '').replaceAll('.', '/');
+
+        let currentValue = tv[0][1];
+
+        if (!isNaN(cursorLine)) {
+            const currentValueIndex = tv.findIndex(([ time ]) => time > cursorLine);
+
+            if (currentValueIndex === -1) {
+                currentValue = tv[tv.length - 1][1];
+            }
+            else if (currentValueIndex === 0) {
+                currentValue = tv[currentValueIndex][1];
+            }
+            else {
+                currentValue = tv[currentValueIndex - 1][1];
+            }
+        }
+
         const graphName = module ? `${module}/${name}` : name;
         const label = labels.find(label => label.textContent === graphName);
 
         if (label && !label.getElementsByTagName('input')[0].checked) {
             return null;
         }
-        annotationTexts.push(graphName);
+        const numLeadingZeroes = size - currentValue.length;
+        const leadingZeroes = isNaN(currentValue) ? '' : '0'.repeat(numLeadingZeroes);
+        const annotation = `${graphName}<br> ${leadingZeroes}${currentValue}`;
+
+        annotationTexts.push(annotation);
 
         const sizeInt = parseInt(size, 10);
 
@@ -164,15 +193,31 @@ function plot({ endtime, signals }, zoomFactor, { minChange, range }) {
     }).filter(data => data !== null);
 
     layout.annotations = annotationTexts.map((text, index) => ({
+        align: 'right',
+        showarrow: false,
+        text,
         x: 0,
         xanchor: 'right',
         xref: 'paper',
         y: index * fractionOfPlot + (fractionOfPlot / 2),
         yanchor: 'middle',
         yref: 'paper',
-        showarrow: false,
-        text,
     }));
+
+    if (cursorLine) {
+        allShapes.push({
+            line: {
+                color: 'orange',
+                width: 1,
+            },
+            type: 'line',
+            x0: cursorLine,
+            x1: cursorLine,
+            y0: 0,
+            y1: 1,
+            yref: 'paper',
+        });
+    }
     layout.shapes = allShapes;
 
     return { data, layout };
