@@ -46,6 +46,7 @@ plotElement.on('plotly_relayout', eventData => {
     }
 
     let range = initialRange.slice();
+    zoomFactor = initialZoomFactor;
 
     if (eventData.hasOwnProperty('xaxis.range[0]')) {
         range = [ eventData['xaxis.range[0]'], eventData['xaxis.range[1]'] ];
