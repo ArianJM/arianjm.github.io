@@ -59,7 +59,8 @@ plotElement.on('plotly_click', ev => {
     const xAxis = plotElement._fullLayout.xaxis;
     const marginLeft = plotElement._fullLayout.margin.l;
     const cursorLineX = xAxis.p2c(ev.event.layerX - marginLeft);
-    const stuff = plot(vcd, zoomFactor, { cursorLine: cursorLineX });
+    debugger;
+    const stuff = plot(vcd, zoomFactor, { cursorLine: cursorLineX, range: plotElement.layout.xaxis.range });
 
     Plotly.react(plotElement, stuff.data, { ...stuff.layout, dragmode }, );
 });
@@ -119,6 +120,7 @@ function plot({ endtime, signals }, zoomFactor, { cursorLine, minChange, range }
         hovermode: 'closest',
         margin: { t: 50, b: 5, l: 200 },
         showlegend: false,
+        title: { text: `Selected time: ${isNaN(cursorLine) ? 0 : Math.floor(cursorLine)}${scale}` },
         xaxis: {
             automargin: true,
             exponentformat: 'none',
