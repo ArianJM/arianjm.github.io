@@ -1,0 +1,10 @@
+pre {
+    left: -1000px;
+    position: absolute;
+    width: fit-content;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
