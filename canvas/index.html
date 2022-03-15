@@ -1,24 +1,144 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="../highlightjs/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="../highlightjs/styles/github.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="../highlightjs/highlight.min.js"></script>
-    <script src="html2canvas/html2canvas.js"></script>
-    <title>Canvas</title>
+    <script src="html2canvas.js"></script>
+    <script src="konva.js"></script>
+    <title>Animation Builder</title>
   </head>
   <body>
-    <h2>Canvas</h2>
-
-    <div class="flex-col">
-      <div>
-        <button id="btn-add-code">Create code object</button>
+    <div class="flex">
+      <div id="objects-list" class="flex-col toolbar">
+        <h3>Objects list</h3>
+      </div>
+      <div class="flex-col toolbar">
+        <h3>Add objects</h3>
+        <button id="add-line">+ Line</button>
+        <button id="add-circle">+ Circle</button>
+        <button id="add-box">+ Box</button>
+        <button id="add-text">+ Text</button>
+        <button id="add-code">+ Code</button>
+        <button id="add-triangle">+ Triangle</button>
+        <button id="add-image">+ Image</button>
+        <button id="add-and">+ AND</button>
+        <button id="add-or">+ OR</button>
+        <button id="add-xor" disabled>+ XOR</button>
+        <button id="add-not" disabled>+ NOT</button>
+        <button id="add-nand" disabled>+ NAND</button>
+        <button id="add-nor" disabled>+ NOR</button>
+        <button id="add-xnor" disabled>+ XNOR</button>
       </div>
 
-      <div>
-        <canvas id="fg-canvas" width="800" height="600"></canvas>
+      <div class="flex-col">
+        <button id="play-button">Play</button>
+        <div id="konva"></div>
+      </div>
+
+      <div class="flex-col toolbar">
+        <h3>Instructions</h3>
+        <button class="instr-button" id="move-instr">Move</button>
+        <button class="instr-button" id="rotate-instr">Rotate</button>
+        <button class="instr-button" id="scale-instr">Scale</button>
+        <button class="instr-button" id="fade-instr">Fade</button>
+        <button class="instr-button" id="background-instr">Background color</button>
+        <button class="instr-button" id="border-instr">Border color</button>
+        <button class="instr-button" id="font-instr">Font color</button>
+        <div class="flex space-between align-center">
+          <h3>Steps</h3>
+          <button id="add-step">+</button>
+        </div>
+        <div id="steps-list" class="flex-col steps">
+          <div class="flex-col step-obj selected">
+            <h4>Step 1</h4>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div>
+      <h3>Object properties</h3>
+      <div class="properties">
+        <label>
+          Background color:
+          <input class="prop-input" id="fill-prop" />
+        </label>
+        <label>
+          Opacity:
+          <input class="prop-input" id="opacity-prop" step="0.01" type="number" />
+        </label>
+        <label>
+          Border color:
+          <input class="prop-input" id="stroke-prop" />
+        </label>
+        <label>
+          Border radius:
+          <input class="prop-input" id="cornerRadius-prop" type="number" />
+        </label>
+        <label>
+          Rotation:
+          <input class="prop-input" id="rotation-prop" type="number" />
+        </label>
+        <label>
+          Width
+          <input class="prop-input" id="width-prop" type="number" />
+        </label>
+        <label>
+          Height
+          <input class="prop-input" id="height-prop" type="number" />
+        </label>
+        <label>
+          Left:
+          <input class="prop-input" id="x-prop" type="number" />
+        </label>
+        <label>
+          Top:
+          <input class="prop-input" id="y-prop" type="number" />
+        </label>
+      </div>
+
+      <div class="properties" id="text-properties">
+        <label>
+          Font color:
+          <input class="prop-input" id="text-fill-prop" />
+        </label>
+        <label>
+          Font size:
+          <input class="prop-input" id="text-fontSize-prop" type="number" />
+        </label>
+        <label>
+          Padding:
+          <input class="prop-input" id="padding-prop" />
+        </label>
+        <label>
+          Font family:
+          <select class="prop-input" name="fontFamily" id="text-fontFamily-prop">
+            <option>Arial</option>
+            <option>Courier</option>
+          </select>
+        </label>
+        <label>
+          Text alignment:
+          <select class="prop-input" name="align" id="text-align-prop">
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+        </label>
+        <label>
+          Font style:
+          <select class="prop-input" name="fontStyle" id="text-fontStyle-prop">
+            <option value="normal">Normal</option>
+            <option value="bold">Bold</option>
+            <option value="italic">Italic</option>
+            <option value="bold italic">Bold & Italic</option>
+          </select>
+        </label>
       </div>
     </div>
+
+    <script src="canvas.js"></script>
   </body>
-  <script src="canvas.js"></script>
 </html>

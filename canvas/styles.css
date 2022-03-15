@@ -4,7 +4,90 @@ pre {
     width: fit-content;
 }
 
+button {
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+label {
+    margin: 8px;
+}
+
+input {
+    width: 120px;
+}
+
+h4 {
+    font-weight: normal;
+    margin: 0;
+}
+
+button#play-button {
+    margin-top: 24px;
+    width: fit-content;
+}
+
+div#konva {
+    border: 1px solid black;
+    height: fit-content;
+    margin-top: 12px;
+}
+
+div#text-properties {
+    margin-top: 8px;
+    visibility: hidden;
+}
+
+div#objects-list {
+    width: 200px;
+}
+
+div.selected > h4{
+    font-weight: bold;
+}
+
+div.step-obj {
+    border: 1px dashed black;
+    margin-bottom: 4px;
+}
+
+button#add-step {
+    margin: 0;
+}
+
+.space-between {
+    justify-content: space-between;
+}
+
+.align-center {
+    align-items: center;
+}
+
+div.object-element {
+    display: flex;
+    justify-content: space-between;
+}
+
+div.steps {
+    display: flex;
+    overflow: auto;
+}
+
+.flex {
+    display: flex;
+}
+
 .flex-col {
     display: flex;
     flex-direction: column;
+}
+
+.toolbar {
+    margin: 0 10px;
+}
+
+.properties {
+    border: 1px solid black;
+    display: flex;
+    flex-wrap: wrap;
 }
