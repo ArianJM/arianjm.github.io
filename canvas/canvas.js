@@ -33,7 +33,8 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
     const objects = [];
     const stage = new Konva.Stage({ container: 'konva', width: 600, height: 400 });
     let layer = new Konva.Layer();
-    const steps = [ { initialState: layer, instructions: [] } ];
+    let playerLayer = null;
+    const steps = [ { stepLayer: layer, instructions: [] } ];
     stage.add(layer);
 
     const transformer = new Konva.Transformer();
@@ -77,11 +78,11 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
         }
 
         function addStep() {
-            layer = steps[currentStep - 1].initialState.clone();
+            layer = steps[currentStep - 1].stepLayer.clone();
             const previousStepInstructions = steps[currentStep - 1].instructions;
 
             // TODO apply instructions from previous step to new layer, so we are at correct initial state.
-            steps.push({ initialState: layer, instructions: [] });
+            steps.push({ stepLayer: layer, instructions: [] });
             currentStep++;
 
             const stepElement = document.createElement('div');
@@ -107,16 +108,31 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
 
         // Play button
         document.getElementById('play-button').addEventListener('click', () => {
-            const layerClone = steps[currentStep - 1].initialState.clone();
-            stage.remove(layer);
-            stage.add(layerClone);
-            steps[currentStep - 1].instructions.forEach(({ parameters, target, type }) => {
-                layer.find(target.replace('selectable ', '.'))[0].to({
-                    ...parameters,
-                    duration,
-                });
+            playerLayer = steps[currentStep - 1].stepLayer.clone();
+            steps.forEach(({ stepLayer }) => {
+                stepLayer.hide();
+            });
+            stage.add(playerLayer);
+
+            steps.slice(currentStep - 1).forEach(({ instructions }) => {
+                playStep(currentStep - 1, 0);
             });
         });
+
+        function playStep(stepIndex, instructionIndex) {
+            const { parameters, target } = steps[stepIndex].instructions[instructionIndex];
+
+            playerLayer.find(target.replace('selectable ', '.'))[0].to({
+                ...parameters,
+                duration,
+                onFinish: () => {
+                    if ((steps[stepIndex].instructions.length - 1) < instructionIndex) {
+                        playStep(stepIndex, instructionIndex + 1);
+                    }
+                    console.log('Finished step');
+                }
+            });
+        }
 
         // Objects:
         // Add line.
@@ -362,14 +378,13 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
 
         function addInstruction(type, inputs) {
             const instructionElement = document.createElement('div');
-
             const inputElements = inputs.map(({ label, type }) => {
                 const labelEl = document.createElement('label');
                 const inputEl = document.createElement('input');
 
-                labelEl.textContent = label;
                 inputEl.setAttribute('type', type);
                 labelEl.appendChild(inputEl);
+                labelEl.textContent = label;
 
                 return labelEl;
             });
@@ -377,17 +392,11 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
             saveButtonElement.textContent = 'Save';
 
             saveButtonElement.addEventListener('click', () => {
-                savedNodes.forEach((savedNode, index) => {
-                    const parameters = { x: clonedNodes[index].x(), y: clonedNodes[index].y() };
-                    steps[currentStep - 1].instructions.push({
-                        parameters,
-                        target: savedNode.name(),
-                    });
-
-                    // savedNode.to({ ...parameters, duration: 0 });
-                    savedNode.show();
+                clonedNodes.forEach((node, index) => {
+                    const parameters = { x: node.x(), y: node.y() };
+                    steps[currentStep - 1].instructions.push({ parameters, target: node.name() });
                 });
-                clonedNodes.forEach(node => node.destroy());
+                loadPreviouslySaved();
             });
 
             instructionElement.classList.add('instr');
@@ -395,8 +404,22 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
             document.getElementsByClassName('step-obj')[currentStep - 1].appendChild(instructionElement);
         }
 
+        function loadPreviouslySaved() {
+            clonedNodes.forEach(node => {
+                node.destroy();
+            });
+            savedNodes.forEach(node => {
+                node.show();
+            });
+            transformer.nodes(savedNodes);
+            clonedNodes = null;
+            savedNodes = null;
+        }
+
         function cloneHideAndSave(nodes) {
-            Array.from(document.getElementsByClassName('instr-button')).forEach(el => el.disabled = true);
+            Array.from(document.getElementsByClassName('instr-button')).forEach(el => {
+                el.disabled = true;
+            });
             savedNodes = nodes;
 
             return nodes.map(node => {
@@ -407,8 +430,8 @@ function createCodeObject({ code, konvaShape = null, method, x = 0, y = 0 }) {
         }
         // Move:
         document.getElementById('move-instr').addEventListener('click', () => {
-            addInstruction('Move', [ { label: 'x', type: 'number' }, { label: 'y', type: 'number' } ]);
             clonedNodes = cloneHideAndSave(transformer.nodes());
+            addInstruction('Move', [ { label: 'x', type: 'number' }, { label: 'y', type: 'number' } ]);
 
             layer.add(...clonedNodes)
             transformer.nodes(clonedNodes);
