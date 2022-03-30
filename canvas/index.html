@@ -3,10 +3,16 @@
   <head>
     <link rel="stylesheet" href="../highlightjs/styles/github.min.css">
     <link rel="stylesheet" href="styles.css">
+    <title>Animation Builder</title>
     <script src="../highlightjs/highlight.min.js"></script>
     <script src="html2canvas.js"></script>
     <script src="konva.js"></script>
-    <title>Animation Builder</title>
+    <script src="utilities.js" defer></script>
+    <script src="objects.js" defer></script>
+    <script src="player.js" defer></script>
+    <script src="instructions.js" defer></script>
+    <script src="steps.js" defer></script>
+    <script src="canvas.js" defer></script>
   </head>
   <body>
     <div class="flex">
@@ -15,15 +21,15 @@
       </div>
       <div class="flex-col toolbar">
         <h3>Add objects</h3>
-        <button id="add-line">+ Line</button>
-        <button id="add-circle">+ Circle</button>
-        <button id="add-box">+ Box</button>
-        <button id="add-text">+ Text</button>
-        <button id="add-code">+ Code</button>
-        <button id="add-triangle">+ Triangle</button>
-        <button id="add-image">+ Image</button>
-        <button id="add-and">+ AND</button>
-        <button id="add-or">+ OR</button>
+        <button class="obj-btn" id="add-line">+ Line</button>
+        <button class="obj-btn" id="add-circle">+ Circle</button>
+        <button class="obj-btn" id="add-box">+ Box</button>
+        <button class="obj-btn" id="add-text">+ Text</button>
+        <button class="obj-btn" id="add-code">+ Code</button>
+        <button class="obj-btn" id="add-triangle">+ Triangle</button>
+        <button class="obj-btn" id="add-image">+ Image</button>
+        <button class="obj-btn" id="add-and">+ AND</button>
+        <button class="obj-btn" id="add-or">+ OR</button>
         <button id="add-xor" disabled>+ XOR</button>
         <button id="add-not" disabled>+ NOT</button>
         <button id="add-nand" disabled>+ NAND</button>
@@ -50,8 +56,8 @@
           <button id="add-step">+</button>
         </div>
         <div id="steps-list" class="flex-col steps">
-          <div class="flex-col step-obj selected">
-            <h4>Step 1</h4>
+          <div class="flex-col initial-state selected" id="animation-end">
+            <h4>Animation end</h4>
           </div>
         </div>
       </div>
@@ -59,7 +65,7 @@
     </div>
 
     <div>
-      <h3>Object properties</h3>
+      <h3>Initial object properties</h3>
       <div class="properties">
         <label>
           Background color:
@@ -138,7 +144,5 @@
         </label>
       </div>
     </div>
-
-    <script src="canvas.js"></script>
   </body>
 </html>

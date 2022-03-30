@@ -46,9 +46,29 @@ div.selected > h4{
     font-weight: bold;
 }
 
-div.step-obj {
+div.step-obj, div.initial-state {
     border: 1px dashed black;
     margin-bottom: 4px;
+}
+
+div.step-obj h4, div.initial-state h4 {
+    padding: 12px;
+}
+
+div.instr {
+    border-left: 1px solid black;
+    display: flex;
+    flex-direction: column;
+    margin: 0 12px 12px;
+    padding-left: 8px;
+}
+
+div.instr label {
+    margin-top: 0;
+}
+
+div.instr input {
+    margin-left: 12px;
 }
 
 button#add-step {
