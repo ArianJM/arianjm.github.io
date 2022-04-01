@@ -1,0 +1,6 @@
+Instruction class:
+* play() - Animate
+* finish() - Go to end
+* apply() - Apply the instruction going forward (no animation)
+* undo() - Undo apply()
+*

@@ -17,6 +17,7 @@ const playButton = document.getElementById('play-button');
     stage.add(layer);
     layer.add(transformer);
     layer.add(selectionRectangle);
+    renderSteps();
 
     function addEventListeners() {
         addObjectsEventListeners();

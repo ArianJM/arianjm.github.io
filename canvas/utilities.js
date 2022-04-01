@@ -45,3 +45,17 @@ function setVisibilityOfElement(element, newVisibility) {
 function getNumberOfSteps() {
     return animationInstructions.filter(({ type }) => type === 'step').length;
 }
+
+function getInstructionsInStep(stepIndex) {
+    let currentStepIndex = -1;
+    return animationInstructions.filter(instruction => {
+        if (instruction.type === 'step') {
+            currentStepIndex++;
+            return false;
+        }
+        if (stepIndex === currentStepIndex) {
+            return true;
+        }
+        return false;
+    });
+}

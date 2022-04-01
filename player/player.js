@@ -1,76 +1,9 @@
+const stage = new Konva.Stage({ container: 'konva', width: 600, height: 400 });
+let layer = new Konva.Layer();
+let currentStep = 0;
+let currentInstruction = 0;
+let animationInstructions = [];
 const animationSteps = [];
-const animationInstructions = [
-    { caption: 'Move Rect 1, then make bigger', type: 'step' },
-    {
-        animate: { x: 100, y: 120 },
-        objId: 0,
-        previousState: { x: 0, y: 0 },
-    },
-    {
-        animate: { height: 80, width: 80 },
-        objId: 0,
-        previousState: { height: 50, width: 50 },
-    },
-    { caption: 'Make Circle 1 bigger and move above Rect 1 at the same time', type: 'step' },
-    {
-        animate: { radius: 80 },
-        objId: 1,
-        previousState: { radius: 10 },
-    },
-    {
-        delay: 0,
-        animate: {x: 100, y: 120 },
-        objId: 1,
-        previousState: { x: 5, y: 50 },
-    },
-    { caption: 'Animation end', type: 'step' },
-];
-
-animationInstructions.forEach((instruction, index) => {
-    if (instruction.type === 'step') {
-        animationSteps.push({ caption: instruction.caption, instructions: [] });
-        const newButton = document.createElement('button');
-
-        newButton.textContent = animationSteps.length;
-        newButton.id = `step-${animationSteps.length}`
-        newButton.addEventListener('click', ({ target: { id } }) => {
-            stepPressed(parseInt(id.replace('step-', ''), 10));
-        });
-        document.getElementById('timeline').appendChild(newButton);
-    }
-    animationSteps[animationSteps.length - 1].instructions.push(instruction);
-
-    const output = document.getElementById('output');
-
-    instruction.play = () => new Promise(resolve => {
-        if (instruction.type === 'step') {
-            output.appendChild(document.createTextNode(`Play step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
-        }
-        else {
-            output.appendChild(document.createTextNode(`  Playing instruction index ${index}: ${JSON.stringify(instruction.animate)}\n`));
-        }
-        setTimeout(resolve, 1000);
-    });
-    instruction.undo = () => {
-        if (instruction.type === 'step') {
-            output.appendChild(document.createTextNode(`Undoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
-        }
-        else {
-            output.appendChild(document.createTextNode(`  Undoing instruction index ${index}: ${JSON.stringify(instruction.previousState)}\n`));
-        }
-    };
-    instruction.redo = () => {
-        if (instruction.type === 'step') {
-            output.appendChild(document.createTextNode(`Redoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
-        }
-        else {
-            output.appendChild(document.createTextNode(`  Redoing instruction index ${index}: ${JSON.stringify(instruction.animate)}\n`));
-        }
-    };
-});
-
-let currentStep = animationSteps.length;
-let currentInstruction = animationInstructions.length;
 
 function getNextConcurrentInstructionsToExecute(instructions) {
     const concurrentInstructions = [ instructions[0] ];
@@ -187,11 +120,135 @@ function playButtonPressed() {
     if (currentInstruction >= animationInstructions.length) {
         goToBeginning();
     }
-    debugger;
     playNextStep();
 }
 
 (function() {
+    const [ height, width ] = [ 50, 50 ];
+    const objects = [
+        new Konva.Rect({
+            fill: 'blue',
+            height,
+            offset: {
+                x: width / 2,
+                y: height / 2,
+            },
+            stroke: 'black',
+            x: 100,
+            y: 100,
+            width,
+        }),
+        new Konva.Circle({
+            fill: 'red',
+            radius: 10,
+            stroke: 'black',
+            x: 50,
+            y: 50,
+        }),
+    ];
+    objects.forEach((obj, index) => {
+        obj.id(String(index));
+    });
+    layer.add(...objects);
+    stage.add(layer);
+
+    const duration = .5;
+    animationInstructions = [
+        { caption: 'Move Rect 1, then make bigger', type: 'step' },
+        {
+            animate: new Konva.Tween({
+                duration,
+                easing: Konva.Easings.EaseInOut,
+                node: layer.find(`#0`)[0],
+                x: 200,
+                y: 150
+            }),
+            objId: '0',
+            previousState: { x: 100, y: 100 },
+        },
+        {
+            animate: new Konva.Tween({
+                duration,
+                easing: Konva.Easings.EaseInOut,
+                node: layer.find(`#0`)[0],
+                height: 100,
+                width: 100
+            }), // { height: 80, width: 80 },
+            objId: '0',
+            previousState: { height: 50, width: 50 },
+        },
+        { caption: 'Make Circle 1 bigger and move above Rect 1 at the same time', type: 'step' },
+        // {
+        //     animate: { radius: 80 },
+        //     objId: '1',
+        //     previousState: { radius: 10 },
+        // },
+        // {
+        //     delay: 0,
+        //     animate: {x: 500, y: 250 },
+        //     objId: '1',
+        //     previousState: { x: 50, y: 50 },
+        // },
+        // { caption: 'Animation end', type: 'step' },
+    ];
+
+    animationInstructions.forEach((instruction, index) => {
+        if (instruction.type === 'step') {
+            animationSteps.push({ caption: instruction.caption, instructions: [] });
+            const newButton = document.createElement('button');
+
+            newButton.textContent = animationSteps.length;
+            newButton.id = `step-${animationSteps.length}`
+            newButton.addEventListener('click', ({ target: { id } }) => {
+                stepPressed(parseInt(id.replace('step-', ''), 10));
+            });
+            document.getElementById('timeline').appendChild(newButton);
+        }
+        animationSteps[animationSteps.length - 1].instructions.push(instruction);
+
+        const output = document.getElementById('output');
+
+        instruction.play = () => new Promise(resolve => {
+            if (instruction.type === 'step') {
+                output.appendChild(document.createTextNode(`Play step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
+                resolve();
+            }
+            else {
+                instruction.animate.onFinish = () => { resolve(); };
+                debugger;
+                instruction.animate.play();
+                output.appendChild(document.createTextNode(`  Playing instruction index ${index}: ${JSON.stringify(instruction.animate)}\n`));
+            }
+        });
+        instruction.undo = () => {
+            if (instruction.type === 'step') {
+                output.appendChild(document.createTextNode(`Undoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
+            }
+            else {
+                output.appendChild(document.createTextNode(`  Undoing instruction index ${index}: ${JSON.stringify(instruction.previousState)}\n`));
+                layer.find(`#${instruction.objId}`)[0].to({
+                    ...instruction.previousState,
+                    duration: 0,
+                });
+            }
+        };
+        instruction.redo = () => {
+            if (instruction.type === 'step') {
+                output.appendChild(document.createTextNode(`Redoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
+            }
+            else {
+                layer.find(`#${instruction.objId}`)[0].to({
+                    ...instruction.animate,
+                    duration: 0,
+                });
+                output.appendChild(document.createTextNode(`  Redoing instruction index ${index}: ${JSON.stringify(instruction.animate)}\n`));
+            }
+        };
+    });
+
+    currentStep = animationSteps.length;
+    currentInstruction = animationInstructions.length;
+
     const undoButton = document.getElementById('undo');
 
     undoButton.addEventListener('click', function() {

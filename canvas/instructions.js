@@ -1,13 +1,17 @@
 const duration = 0.33;
 
 class Instruction {
+    inputs = null;
     newState = null;
     previousState = null;
     targetId = null;
+    type = null;
 
-    constructor({ previousState = null, target = null } = {}) {
+    constructor({ inputs, previousState = null, target = null, type = null } = {}) {
+        this.inputs = inputs;
         this.previousState = previousState;
         this.targetId = target;
+        this.type = type;
     }
 
     getTarget() {
@@ -41,18 +45,21 @@ class Instruction {
     }
 }
 
-function addInstruction({ inputs, nodes, type }) {
-    // Disable buttons.
-    setDisabledArrayOfElements(getObjectButtons().concat(getInstructionButtons()).concat(document.getElementById('add-step')), true);
+function selectInstructionCurried(instructionIndex) {
+    return event => {
+        debugger;
+        stopAnimating();
+        goToInstruction(instructionIndex);
+        updateSelectedInstruction();
+        event.stopPropagation();
+    }
+}
 
-    const newInstruction = new Instruction();
-
-    nodes.forEach((node, index) => {
-        const previousState = { x: node.x(), y: node.y() };
-        newInstruction.previousState = previousState;
-        newInstruction.targetId = node.id();
-        animationInstructions.splice(currentInstruction, 0, newInstruction);
-    });
+function updateSelectedInstruction() {
+    renderSteps();
+    const instruction = animationInstructions[currentInstruction];
+    const instructionElement = document.getElementById(`instr-${currentInstruction}`);
+    instructionElement.classList.add('selected');
 
     const saveButtonElement = document.createElement('button');
     saveButtonElement.textContent = 'Save';
@@ -67,18 +74,23 @@ function addInstruction({ inputs, nodes, type }) {
         });
     });
 
-    const inputElements = inputs.map(({ label, type }) => {
+    const inputElements = instruction.inputs.map(({ label, type }) => {
         const labelEl = document.createElement('label');
         const inputEl = document.createElement('input');
 
         inputEl.setAttribute('type', type);
-        inputEl.value = newInstruction.previousState[label];
+        inputEl.value = instruction.previousState[label];
         inputEl.addEventListener('change', ({ target: { value } }) => {
             nodes.forEach(node => {
                 node.to({
                     [label]: parseInt(value, 10),
                     duration: 0,
                 });
+            });
+
+            nodes.forEach((node, index) => {
+                const newState = { x: node.x(), y: node.y() };
+                instruction.newState = newState;
             });
         });
         labelEl.textContent = label;
@@ -87,22 +99,75 @@ function addInstruction({ inputs, nodes, type }) {
         return labelEl;
     });
 
-    const parametersElement = document.createElement('div');
-    parametersElement.classList.add('instr-parameters');
-    parametersElement.append(...inputElements, saveButtonElement);
+    instructionElement.append(...inputElements);
+}
 
-    const instructionNumber = steps[currentStep].instructions.length;
-    const pElement = document.createElement('p');
-    pElement.textContent = `${instructionNumber}. ${type}`;
-    pElement.id =`s${currentStep}-i${instructionNumber}`;
-    pElement.addEventListener('click', () => {
-        setVisibilityOfArray(Array.from(document.getElementsByClassName('instr-parameters')), 'show');
+function addInstruction({ inputs, nodes, type }) {
+    // Disable buttons.
+    setDisabledArrayOfElements(getObjectButtons().concat(getInstructionButtons()).concat(document.getElementById('add-step')), true);
+
+    const newInstruction = new Instruction({ inputs, type });
+    animationInstructions.splice(currentInstruction + 1, 0, newInstruction);
+    renderSteps();
+
+    nodes.forEach((node, index) => {
+        const previousState = { x: node.x(), y: node.y() };
+        newInstruction.previousState = previousState;
+        newInstruction.targetId = node.id();
     });
 
-    const instructionElement = document.createElement('div');
-    instructionElement.classList.add('instr');
-    instructionElement.append(pElement, parametersElement);
-    document.getElementsByClassName('step-obj')[currentStep - 1].appendChild(instructionElement);
+    // const saveButtonElement = document.createElement('button');
+    // saveButtonElement.textContent = 'Save';
+    // saveButtonElement.addEventListener('click', () => {
+    //     nodes.forEach((node, index) => {
+    //         const newState = { x: node.x(), y: node.y() };
+    //         newInstruction.newState = newState;
+    //         setVisibilityOfArray(Array.from(document.getElementsByClassName('instr-parameters')), 'hidden');
+
+    //         // Re-enable buttons.
+    //         setDisabledArrayOfElements(getObjectButtons().concat(getInstructionButtons()).concat(document.getElementById('add-step')), false);
+    //     });
+    // });
+
+    // const inputElements = inputs.map(({ label, type }) => {
+    //     const labelEl = document.createElement('label');
+    //     const inputEl = document.createElement('input');
+
+    //     inputEl.setAttribute('type', type);
+    //     inputEl.value = newInstruction.previousState[label];
+    //     inputEl.addEventListener('change', ({ target: { value } }) => {
+    //         nodes.forEach(node => {
+    //             node.to({
+    //                 [label]: parseInt(value, 10),
+    //                 duration: 0,
+    //             });
+    //         });
+    //     });
+    //     labelEl.textContent = label;
+    //     labelEl.appendChild(inputEl);
+
+    //     return labelEl;
+    // });
+
+
+    // debugger;
+
+    // const parametersElement = document.createElement('div');
+    // parametersElement.classList.add('instr-parameters');
+    // parametersElement.append(...inputElements, saveButtonElement);
+
+    // const instructionNumber = steps[currentStep].instructions.length;
+    // const pElement = document.createElement('p');
+    // pElement.textContent = `${instructionNumber}. ${type}`;
+    // pElement.id =`s${currentStep}-i${instructionNumber}`;
+    // pElement.addEventListener('click', () => {
+    //     setVisibilityOfArray(Array.from(document.getElementsByClassName('instr-parameters')), 'show');
+    // });
+
+    // const instructionElement = document.createElement('div');
+    // instructionElement.classList.add('instr');
+    // instructionElement.append(pElement, parametersElement);
+    // document.getElementsByClassName('step-obj')[currentStep - 1].appendChild(instructionElement);
 }
 
 function addInstructionsEventListeners() {
@@ -177,9 +242,4 @@ function addInstructionsEventListeners() {
             });
         });
     });
-}
-
-function selectInstruction(instructionToSelect) {
-    currentInstruction = instructionToSelect;
-    Array.from(document.getElementsByClassName(''))
 }

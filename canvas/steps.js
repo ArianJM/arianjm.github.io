@@ -12,22 +12,14 @@ class Step {
 
     constructor({ caption }) {
         this.caption = caption;
-        this.type ='step';
     }
 }
+
 function addStep() {
     const numberOfSteps = getNumberOfSteps();
 
     // Insert before animation end.
     animationInstructions.splice(animationInstructions.length - 1, 0, new Step({ caption: `Step: ${numberOfSteps}` }));
-
-    const stepElement = document.createElement('div');
-
-    stepElement.classList.add('flex-col', 'step-obj');
-    stepElement.innerHTML = `<h4>Step ${numberOfSteps}</h4>`;
-    stepElement.addEventListener('click', selectStepCurried(numberOfSteps - 1));
-    document.getElementById('steps-list').appendChild(stepElement);
-
     goToStep(numberOfSteps - 1);
     updateSelectedStep();
 }
@@ -44,53 +36,61 @@ function selectStepCurried(stepIndex) {
     }
 }
 
+function renderSteps() {
+    const stepsElement = document.getElementById('steps-list');
+    const stepFragments = [];
+    let instructionIndex = 0;
+
+    for (let stepIndex = 0; stepIndex < getNumberOfSteps(); stepIndex++) {
+        const stepElement = document.createElement('div');
+
+        const classes = [ 'flex-col', 'step-obj' ];
+
+        if (stepIndex === currentStep) {
+            classes.push('selected');
+        }
+
+        stepElement.classList.add(...classes);
+        stepElement.addEventListener('click', selectStepCurried(stepIndex));
+
+        let h4Element = document.createElement('h4');
+        stepElement.append(h4Element);
+
+        // Animation end, insert at the beginning.
+        if (stepIndex === getNumberOfSteps() - 1) {
+            h4Element.textContent = 'Animation end';
+            stepFragments.unshift(stepElement);
+        }
+        else {
+            h4Element.textContent = `Step ${stepIndex + 1}`;
+            stepFragments.push(stepElement);
+        }
+
+        instructionIndex++;
+
+        stepElement.append(...getInstructionsInStep(stepIndex).map((instruction, stepInstructionIndex) => {
+            const pElement = document.createElement('p');
+            pElement.textContent = `${stepInstructionIndex + 1}. ${instruction.type}`;
+            pElement.addEventListener('click', selectInstructionCurried(instructionIndex));
+
+            const instructionElement = document.createElement('div');
+            instructionElement.id = `instr-${instructionIndex}`;
+            instructionElement.classList.add('instr');
+            instructionElement.append(pElement);
+
+            instructionIndex++;
+
+            return instructionElement;
+        }));
+    }
+    stepsElement.innerHTML = '';
+    stepsElement.append(...stepFragments);
+}
+
 function updateSelectedStep() {
     // Enable instruction creation if step is not "Animation end".
     setDisabledArrayOfElements(getInstructionButtons(), !transformer.nodes().length || currentStep === (getNumberOfSteps() - 1));
-
-    // Deselect all.
-    const animationEndEl = document.getElementById('animation-end');
-    const stepObjArray = Array.from(document.getElementsByClassName('step-obj'));
-
-    stepObjArray.forEach((element, index) => {
-        element.classList.remove('selected');
-    });
-    animationEndEl.classList.remove('selected');
-
-    // Last step is the "Animation end" state.
-    if (currentStep === stepObjArray.length) {
-        animationEndEl.classList.add('selected');
-    }
-    else {
-        stepObjArray[currentStep].classList.add('selected');
-    }
-}
-
-function selectStep(stepIndex) {
-    currentStep = stepIndex;
-
-    // Enable instruction creation if step is not "Animation end".
-    setDisabledArrayOfElements(getInstructionButtons(), !transformer.nodes().length || currentStep === 0);
-
-    // TODO: Select instruction.
-    currentInstruction = 0;
-
-    // Deselect all.
-    const animationEndEl = document.getElementById('animation-end');
-    const stepObjArray = Array.from(document.getElementsByClassName('step-obj'));
-
-    stepObjArray.forEach((element, index) => {
-        element.classList.remove('selected');
-    });
-    animationEndEl.classList.remove('selected');
-
-    // stepIndex 0 is the "Animation end" state.
-    if (stepIndex === 0) {
-        animationEndEl.classList.add('selected');
-    }
-    else {
-        stepObjArray[stepIndex - 1].classList.add('selected');
-    }
+    renderSteps();
 }
 
 function playStep(stepIndex, instructionIndex) {
@@ -121,7 +121,6 @@ function playStep(stepIndex, instructionIndex) {
                 console.log('Finished step');
                 playButton.textContent = 'Play';
                 updateSelectedStep();
-                // selectStep(stepIndex === steps.length ? 0 : stepIndex + 1);
             }
             else {
                 console.log('Finished animation');
@@ -132,28 +131,6 @@ function playStep(stepIndex, instructionIndex) {
         }
     });
 }
-
-// function goToStep(stepIndex) {
-//     let applyChanges = {};
-
-//     // If currentStep is 0 we're in the "Animatin end" state, so we go backwards from the end.
-//     if (currentStep === 0) {
-//         applyChanges = getAllBackwardObjectChangesBetween({ fromStepIndex: steps.length - 1, toStepIndex: stepIndex });
-//     }
-//     else if (stepIndex > currentStep) {
-//         applyChanges = getAllForwardObjectChangesBetween({ fromStepIndex: currentStep, toStepIndex: stepIndex });
-//     }
-//     else if (stepIndex < currentStep) {
-//         applyChanges = getAllBackwardObjectChangesBetween({ fromStepIndex: currentStep, toStepIndex: stepIndex });
-//     }
-
-//     Object.entries(applyChanges).map(([ target, endState ]) => {
-//         layer.find(`#${target}`)[0].to({
-//             ...endState,
-//             duration: 0,
-//         });
-//     });
-// }
 
 function getAllForwardObjectChangesBetween({ fromStepIndex, toStepIndex, fromInstructionIndex = 0, toInstructionIndex }) {
     const applyChanges = {};
@@ -207,18 +184,5 @@ function addStepsEventListeners() {
     // Add step:
     document.getElementById('add-step').addEventListener('click', () => {
         addStep();
-    });
-
-    const animationEndEl = document.getElementById('animation-end');
-
-    document.getElementById('animation-end').addEventListener('click', () => {
-        Array.from(document.getElementsByClassName('step-obj')).forEach((element, index) => {
-            element.classList.remove('selected');
-        });
-        animationEndEl.classList.add('selected');
-
-        goToEnd();
-        updateSelectedStep();
-        //selectStep(0);
     });
 }
