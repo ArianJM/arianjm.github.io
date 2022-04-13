@@ -131,14 +131,17 @@ function playButtonPressed() {
 
 (function() {
     const [ height, width ] = [ 50, 50 ];
+    const captionObject = new Konva.Text({
+        align: 'center',
+        fontFamily: 'HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif',
+        fontSize: 15,
+        opacity: 1,
+        text: 'Animation end',
+        width: konvaWidth,
+        y: 350,
+    });
     const objects = [
-        new Konva.Text({
-            align: 'center',
-            fontFamily: 'HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif',
-            fontSize: 15,
-            opacity: 0,
-            width: konvaWidth,
-        }),
+        captionObject,
         new Konva.Rect({
             fill: 'blue',
             height,
@@ -191,7 +194,7 @@ function playButtonPressed() {
         },
         { caption: 'Animation end', type: 'step' },
     ];
-    const duration = .35;
+    const duration = 1;
 
     animationInstructions.forEach((instruction, index) => {
         if (instruction.type === 'step') {
@@ -204,12 +207,6 @@ function playButtonPressed() {
                 stepPressed(parseInt(id.replace('step-', ''), 10));
             });
             document.getElementById('timeline').appendChild(newButton);
-            instruction.animate = new Konva.Tween({
-                duration,
-                easing: Konva.Easings.EaseInOut,
-                node: layer.find('#0')[0],
-                opacity: 1,
-            });
         }
         else {
             instruction.animate = new Konva.Tween({
@@ -226,12 +223,24 @@ function playButtonPressed() {
         instruction.play = () => new Promise(resolve => {
             if (instruction.type === 'step') {
                 output.appendChild(document.createTextNode(`Play step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
-                instruction.animate.onFinish = () => {
-                    layer.find('#0')[0].text(instruction.caption);
-                    instruction.animate.onFinish = () => { resolve(); };
-                    instruction.animate.play();
-                };
-                instruction.animate.reverse();
+                instruction.animate = new Konva.Tween({
+                    duration,
+                    node: captionObject,
+                    opacity: 0,
+                    onFinish: () => {
+                        captionObject.text(instruction.caption);
+                        instruction.animate = new Konva.Tween({
+                            duration,
+                            node: captionObject,
+                            opacity: 1,
+                            onFinish: () => {
+                                resolve();
+                            },
+                        });
+                        instruction.animate.play();
+                    },
+                });
+                instruction.animate.play();
             }
             else {
                 instruction.animate.onFinish = () => { resolve(); };
