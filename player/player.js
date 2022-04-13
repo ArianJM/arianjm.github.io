@@ -30,8 +30,6 @@ function goToInstruction(instructionNumber) {
     const undoOrRedo = (instructionNumber - currentInstruction) < 0 ? 'undo' : 'redo';
     let instructionStepChange = undoOrRedo === 'redo' ? 1 : -1;
 
-    debugger;
-
     while (currentInstruction !== instructionNumber) {
         let instruction = animationInstructions[currentInstruction];
 
@@ -78,10 +76,8 @@ function goToEnd() {
 
 function stopAnimating() {
     animationInstructions.forEach(instruction => {
-        instruction.animate?.pause();
+        instruction.animate?.finish();
     });
-    console.log('TODO: Stop animating');
-    // Stop any animating. Note: The promises need to resolve with forcedStop
 }
 
 async function playNextStep() {
@@ -91,15 +87,11 @@ async function playNextStep() {
     while (instructionsInStep.length) {
         const instructionsToPlay = getNextConcurrentInstructionsToExecute(instructionsInStep);
 
-        // This would avoid the need to compute a "isPromiseStale", like AnimationPlayer currently does.
         await Promise.all(instructionsToPlay.map(instructionToPlay => {
             const promise = instructionToPlay.play();
             currentInstruction++;
             return promise;
         }));
-
-        // TODO
-        // if (forcedStop) return;
 
         instructionsInStep.splice(0, instructionsToPlay.length);
     }
@@ -139,13 +131,17 @@ function playButtonPressed() {
 
 (function() {
     const [ height, width ] = [ 50, 50 ];
+    const captionObject = new Konva.Text({
+        align: 'center',
+        fontFamily: 'HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif',
+        fontSize: 15,
+        opacity: 1,
+        text: 'Animation end',
+        width: konvaWidth,
+        y: 350,
+    });
     const objects = [
-        new Konva.Text({
-            align: 'center',
-            fontFamily: 'HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif',
-            fontSize: 15,
-            width: konvaWidth,
-        }),
+        captionObject,
         new Konva.Rect({
             fill: 'blue',
             height,
@@ -198,6 +194,7 @@ function playButtonPressed() {
         },
         { caption: 'Animation end', type: 'step' },
     ];
+    const duration = 1;
 
     animationInstructions.forEach((instruction, index) => {
         if (instruction.type === 'step') {
@@ -205,7 +202,7 @@ function playButtonPressed() {
             const newButton = document.createElement('button');
 
             newButton.textContent = animationSteps.length;
-            newButton.id = `step-${animationSteps.length}`
+            newButton.id = `step-${animationSteps.length}`;
             newButton.addEventListener('click', ({ target: { id } }) => {
                 stepPressed(parseInt(id.replace('step-', ''), 10));
             });
@@ -213,7 +210,7 @@ function playButtonPressed() {
         }
         else {
             instruction.animate = new Konva.Tween({
-                duration: 1,
+                duration,
                 easing: Konva.Easings.EaseInOut,
                 node: layer.find(`#${instruction.objId}`)[0],
                 ...instruction.nextState,
@@ -226,7 +223,24 @@ function playButtonPressed() {
         instruction.play = () => new Promise(resolve => {
             if (instruction.type === 'step') {
                 output.appendChild(document.createTextNode(`Play step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
-                resolve();
+                instruction.animate = new Konva.Tween({
+                    duration,
+                    node: captionObject,
+                    opacity: 0,
+                    onFinish: () => {
+                        captionObject.text(instruction.caption);
+                        instruction.animate = new Konva.Tween({
+                            duration,
+                            node: captionObject,
+                            opacity: 1,
+                            onFinish: () => {
+                                resolve();
+                            },
+                        });
+                        instruction.animate.play();
+                    },
+                });
+                instruction.animate.play();
             }
             else {
                 instruction.animate.onFinish = () => { resolve(); };
