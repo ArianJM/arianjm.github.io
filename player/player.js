@@ -21,10 +21,6 @@ function getInstructionsForNextStep() {
     return animationInstructions.slice(currentInstruction, animationInstructions.findIndex((instr, index) => (index > currentInstruction) && (instr.type === 'step')))
 }
 
-function scrollToBottom() {
-    output.scrollTop = output.scrollHeight;
-}
-
 // needed for builder, not player
 function goToInstruction(instructionNumber) {
     const undoOrRedo = (instructionNumber - currentInstruction) < 0 ? 'undo' : 'redo';
@@ -50,7 +46,6 @@ function goToInstruction(instructionNumber) {
             }
         }
     }
-    scrollToBottom();
 }
 
 function goToStep(stepNumber) {
@@ -71,11 +66,11 @@ function goToBeginning() {
 }
 
 function goToEnd() {
-    goToInstruction(animationInstructions.length - 1);
+    goToInstruction(animationInstructions.length);
 }
 
 function stopAnimating() {
-    animationInstructions.forEach(instruction => {
+    animationInstructions.slice(0, currentInstruction).forEach(instruction => {
         instruction.animate?.finish();
     });
 }
@@ -126,7 +121,6 @@ function playButtonPressed() {
         goToBeginning();
     }
     playNextStep();
-    scrollToBottom();
 }
 
 (function() {
@@ -136,7 +130,6 @@ function playButtonPressed() {
         fontFamily: 'HelveticaNeue-Light,"Helvetica Neue Light","Helvetica Neue",Helvetica,Arial,"Lucida Grande",sans-serif',
         fontSize: 15,
         opacity: 1,
-        text: 'Animation end',
         width: konvaWidth,
         y: 350,
     });
@@ -224,13 +217,13 @@ function playButtonPressed() {
             if (instruction.type === 'step') {
                 output.appendChild(document.createTextNode(`Play step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
                 instruction.animate = new Konva.Tween({
-                    duration,
+                    duration: 0.5,
                     node: captionObject,
                     opacity: 0,
                     onFinish: () => {
                         captionObject.text(instruction.caption);
                         instruction.animate = new Konva.Tween({
-                            duration,
+                            duration: 0.5,
                             node: captionObject,
                             opacity: 1,
                             onFinish: () => {
@@ -252,6 +245,15 @@ function playButtonPressed() {
         instruction.undo = () => {
             if (instruction.type === 'step') {
                 output.appendChild(document.createTextNode(`Undoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
+                let stepIndex = -1;
+                const stepInstructions = animationInstructions.filter(({ type }) => type === 'step');
+                stepInstructions.reverse();
+
+                const currentStepIndex = stepInstructions.indexOf(instruction);
+                const prevInstruction = stepInstructions.find((instruction, index) => (index > currentStepIndex));
+
+                captionObject.text(prevInstruction?.caption ?? instruction.caption);
+                captionObject.opacity(1);
             }
             else {
                 instruction.animate.reset();
@@ -261,6 +263,16 @@ function playButtonPressed() {
         instruction.redo = () => {
             if (instruction.type === 'step') {
                 output.appendChild(document.createTextNode(`Redoing step ${currentStep}, instruction index ${index}: ${instruction.caption}\n`));
+                let stepIndex = -1;
+                const stepInstruction = animationInstructions.find(instruction => {
+                    if (instruction.type === 'step') {
+                        stepIndex++;
+                        return stepIndex === currentStep;
+                    }
+                    return false;
+                });
+                captionObject.text(stepInstruction.caption);
+                captionObject.opacity(1);
             }
             else {
                 instruction.animate.finish();
@@ -271,16 +283,12 @@ function playButtonPressed() {
 
     goToEnd();
 
-    const undoButton = document.getElementById('undo');
-
-    undoButton.addEventListener('click', function() {
+    document.getElementById('undo').addEventListener('click', function() {
         if (currentInstruction <= 0) {
             output.appendChild(document.createTextNode(`-- Already at the beginning, can't go back.\n`));
-            scrollToBottom();
             return;
         }
         goToInstruction(currentInstruction - 1);
-        scrollToBottom();
     });
 
     document.getElementById('play').addEventListener('click', playButtonPressed);
@@ -288,10 +296,8 @@ function playButtonPressed() {
     document.getElementById('redo').addEventListener('click', function() {
         if (currentInstruction >= animationInstructions.length) {
             output.appendChild(document.createTextNode(`-- Already at the end, can't go forward.\n`));
-            scrollToBottom();
             return;
         }
         goToInstruction(currentInstruction + 1);
-        scrollToBottom();
     });
 })();
