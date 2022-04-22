@@ -47,21 +47,25 @@ const objects = [
         fontSize: 15,
         opacity: 1,
         width: konvaWidth,
-        y: 350,
+        X: -1,
+        y: 359,
     }),
     new Konva.Rect({
         cornerRadius: 10,
         fill: 'rgb(30, 200, 30)',
         height: 42,
         offset: {
-            x: -1,
-            y: 0,
+            x: 51,
+            y: 21,
         },
+        rotation: 0,
         stroke: 'rgb(230, 129, 66)',
-        x: 202,
-        y: 218,
+        x: 252,
+        y: 242,
         width: 102,
     }),
+    textObjBackground,
+    textObj,
     new Konva.Circle({
         fill: 'rgb(220, 4, 4)',
         radius: 49,
@@ -71,10 +75,8 @@ const objects = [
         },
         // stroke: 'black',
         x: 478,
-        y: 42,
+        y: 46,
     }),
-    textObjBackground,
-    textObj,
     new Konva.Rect({
         fill: 'black',
         height: 2,
@@ -84,15 +86,37 @@ const objects = [
     }),
 
     // AND gate.
-    new Konva.Rect({
-        // fill: 'black',
-        cornerRadius: [ 0, 50, 50, 0 ],
-        height: 49,
-        offset: { x: -1 },
+    new Konva.Path({
+        data: 'M 0 0 H 36 C 65 0, 65 48, 36 48 H 0 Z',
+        height: 50,
+        offset: { x: 30, y: 25 },
         stroke: 'black',
-        width: 59,
-        x: 50,
-        y: 200,
+        strokeScaleEnabled: false,
+        width: 60,
+        x: 51 + 30,
+        y: 51 + 25,
+    }),
+
+    // Triangle
+    new Konva.RegularPolygon({
+        fill: '#333',
+        offset: { y: -1 },
+        rotation: 45,
+        sides: 3,
+        radius: 7,
+        //width: 14,
+        x: 126,
+        y: 356,
+    }),
+
+    // OR gate.
+    new Konva.Path({
+        data: 'M 0 0 H 10 C 59 0, 59 22, 59 24 C 59 26, 59 48, 10 48 H 0 Q 24 24, 0 0 Z',
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 151 + 30,
+        y: 51 + 25,
     }),
 ];
 
@@ -257,11 +281,17 @@ function processTweenEndCurried() {
 
     instructions.push(
         { type: 'step', caption: captions[0] },
-        { type: 'instruction', node: objects[2], options: { radius: 80 } },
-        { type: 'instruction', node: objects[2], options: { x: 500, y: 250 }, delay: 0 },
-        { type: 'instruction', node: objects[2], options: { opacity: .4 }, delay: 0 },
-        { type: 'instruction', node: objects[3], options: { x: 0, y: 100 } },
-        { type: 'instruction', node: objects[4], options: { x: 0, y: 100 }, delay: 0 },
+        { type: 'instruction', node: objects[8], options: { scaleX: 40 / objects[6].width(), scaleY: 80 / objects[6].height(), x: objects[8].x() - 10, y: objects[8].y() + 16 } },
+        { type: 'instruction', node: objects[6], options: { y: 201 + objects[6].offsetY() } },
+        { type: 'instruction', node: objects[1], options: { rotation: 30 } },
+        { type: 'instruction', node: objects[2], options: { opacity: .33 } },
+        { type: 'instruction', node: objects[3], options: { opacity: .33 }, delay: 0 },
+        //{ type: 'instruction', node: objects[6], options: { scaleX: 80 / objects[6].width(), scaleY: } },
+        { type: 'instruction', node: objects[4], options: { radius: 80 } },
+        { type: 'instruction', node: objects[4], options: { x: 500, y: 250 }, delay: 0 },
+        { type: 'instruction', node: objects[4], options: { opacity: .4 }, delay: 0 },
+        { type: 'instruction', node: objects[2], options: { x: 0, y: 100 } },
+        { type: 'instruction', node: objects[3], options: { x: 0, y: 100 }, delay: 0 },
         { type: 'instruction', node: objects[5], options: { x: 0, y: 116 } },
         { type: 'instruction', node: objects[5], options: { y: 132 } },
         { type: 'instruction', node: objects[5], options: { y: 148 } },
@@ -273,7 +303,7 @@ function processTweenEndCurried() {
         // { type: 'instruction', node: objects[1], options: { height: 100, width: 100 } },
         { type: 'step', caption: captions[1] },
         // { type: 'instruction', node: objects[1], options: { x: 200, y: 300 } },
-        { type: 'instruction', node: objects[2], options: { radius: 5 } },
+        { type: 'instruction', node: objects[4], options: { radius: 5 } },
         { type: 'step', caption: captions[2] },
     );
     steps = instructions.filter(({ type }) => type === 'step');
