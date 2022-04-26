@@ -300,8 +300,11 @@ function playNextStep() {
     currentTweens.forEach(tween => { tween.play(); });
 }
 
+function emptyFunction() {}
+
 function stepPressed(stepNumber) {
     stopButtonPressed();
+    currentTweens.forEach(tween => { tween.onFinish = emptyFunction });
     goToStep(stepNumber);
     playNextStep();
 }
@@ -367,7 +370,7 @@ function processTweenEndCurried() {
         { type: 'instruction', node: objects[2], options: { opacity: .33 }, delay: 0 },
         { type: 'instruction', node: objects[1], options: { x: 0, y: 100 } },
         { type: 'instruction', node: objects[2], options: { x: 0, y: 100 }, delay: 0 },
-        { type: 'instruction', node: objects[5], options: { x: 0, y: 116 } },
+        { type: 'instruction', node: objects[5], options: { x: 0, y: 122 } },
         { type: 'instruction', node: objects[4], options: { fill: 'rgb(176, 214, 251)' } },
         { type: 'instruction', node: objects[3], options: { stroke: 'rgb(136, 100, 65)' } },
         { type: 'instruction', node: objects[1], options: { opacity: 1 } },
