@@ -50,6 +50,8 @@ const objects = [
         X: -1,
         y: 359,
     }),
+    textObjBackground,
+    textObj,
     new Konva.Rect({
         cornerRadius: 10,
         fill: 'rgb(30, 200, 30)',
@@ -64,8 +66,6 @@ const objects = [
         y: 242,
         width: 102,
     }),
-    textObjBackground,
-    textObj,
     new Konva.Circle({
         fill: 'rgb(220, 4, 4)',
         radius: 49,
@@ -111,13 +111,70 @@ const objects = [
 
     // OR gate.
     new Konva.Path({
-        data: 'M 0 0 H 10 C 59 0, 59 22, 59 24 C 59 26, 59 48, 10 48 H 0 Q 24 24, 0 0 Z',
+        data: 'M 0 0 H 10 C 55 0, 55 22, 55 24 C 55 26, 55 48, 10 48 H 0 Q 20 20, 0 0 Z',
         offset: { x: 30, y: 25 },
         stroke: 'rgb(87, 128, 220)',
         strokeScaleEnabled: false,
-        x: 151 + 30,
+        x: 150 + 30,
         y: 51 + 25,
     }),
+    // XOR gate.
+    new Konva.Path({
+        data: 'M 0 0 H 10 C 56 0, 56 22, 56 24 C 56 26, 56 48, 10 48 H 0 Q 20 24, 0 0 M -5 0 Q 15 24, -5 48',
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 200 + 33,
+        y: 3 + 25,
+    }),
+    // NOT gate.
+    new Konva.Path({
+        data: `
+M 40 25 V 11 L 59 21
+M 58 26 L 40 36 V 25
+M 59 24 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0`,
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 170 + 32,
+        y: 51 + 25,
+    }),
+
+    // NAND gate.
+    new Konva.Path({
+        data: `
+M 0 0 H 36 C 65 0, 65 48, 36 48 H 0 Z
+M 60 24 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0`,
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 50 + 31,
+        y: 260 + 26,
+    }),
+
+    // NOR gate.
+    new Konva.Path({
+        data: `
+M 0 0 H 10 C 57 0, 57 22, 57 24 C 57 26, 57 48, 10 48 H 0 Q 20 20, 0 0 Z
+M 59 24 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0`,
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 50 + 32,
+        y: 320 + 26,
+        }),
+    // XNOR gate.
+    new Konva.Path({
+        data: `
+M 0 0 H 10 C 56 0, 56 22, 56 24 C 56 26, 56 48, 10 48 H 0 Q 20 24, 0 0 M -5 0 Q 15 24, -5 48
+M 58 24 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0`,
+        offset: { x: 30, y: 25 },
+        stroke: 'rgb(87, 128, 220)',
+        strokeScaleEnabled: false,
+        x: 130 + 33,
+        y: 260 + 26,
+    }),
+
 ];
 
 objects.forEach((obj, index) => {
@@ -282,28 +339,17 @@ function processTweenEndCurried() {
     instructions.push(
         { type: 'step', caption: captions[0] },
         { type: 'instruction', node: objects[8], options: { scaleX: 40 / objects[6].width(), scaleY: 80 / objects[6].height(), x: objects[8].x() - 10, y: objects[8].y() + 16 } },
-        { type: 'instruction', node: objects[6], options: { y: 201 + objects[6].offsetY() } },
-        { type: 'instruction', node: objects[1], options: { rotation: 30 } },
-        { type: 'instruction', node: objects[2], options: { opacity: .33 } },
-        { type: 'instruction', node: objects[3], options: { opacity: .33 }, delay: 0 },
-        //{ type: 'instruction', node: objects[6], options: { scaleX: 80 / objects[6].width(), scaleY: } },
-        { type: 'instruction', node: objects[4], options: { radius: 80 } },
-        { type: 'instruction', node: objects[4], options: { x: 500, y: 250 }, delay: 0 },
-        { type: 'instruction', node: objects[4], options: { opacity: .4 }, delay: 0 },
-        { type: 'instruction', node: objects[2], options: { x: 0, y: 100 } },
-        { type: 'instruction', node: objects[3], options: { x: 0, y: 100 }, delay: 0 },
+        { type: 'instruction', node: objects[3], options: { rotation: 30 } },
+        { type: 'instruction', node: objects[1], options: { opacity: .33 } },
+        { type: 'instruction', node: objects[2], options: { opacity: .33 }, delay: 0 },
+        { type: 'instruction', node: objects[1], options: { x: 0, y: 100 } },
+        { type: 'instruction', node: objects[2], options: { x: 0, y: 100 }, delay: 0 },
         { type: 'instruction', node: objects[5], options: { x: 0, y: 116 } },
-        { type: 'instruction', node: objects[5], options: { y: 132 } },
-        { type: 'instruction', node: objects[5], options: { y: 148 } },
-        { type: 'instruction', node: objects[5], options: { y: 164 } },
-        { type: 'instruction', node: objects[5], options: { y: 180 } },
-        { type: 'instruction', node: objects[5], options: { y: 196 } },
-        { type: 'step', caption: 'Next' },
-        // { type: 'instruction', node: objects[1], options: { x: 200, y: 150 } },
-        // { type: 'instruction', node: objects[1], options: { height: 100, width: 100 } },
-        { type: 'step', caption: captions[1] },
-        // { type: 'instruction', node: objects[1], options: { x: 200, y: 300 } },
-        { type: 'instruction', node: objects[4], options: { radius: 5 } },
+        { type: 'instruction', node: objects[4], options: { fill: 'rgb(176, 214, 251)' } },
+        { type: 'instruction', node: objects[3], options: { stroke: 'rgb(136, 100, 65)' } },
+        { type: 'instruction', node: objects[1], options: { opacity: 1 } },
+        { type: 'instruction', node: objects[2], options: { opacity: 1 }, delay: 0 },
+        { type: 'instruction', node: objects[2], options: { fill: 'rgb(255, 211, 100)' } },
         { type: 'step', caption: captions[2] },
     );
     steps = instructions.filter(({ type }) => type === 'step');
