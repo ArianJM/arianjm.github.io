@@ -376,6 +376,10 @@ function processTweenEndCurried() {
         { type: 'instruction', node: objects[1], options: { opacity: 1 } },
         { type: 'instruction', node: objects[2], options: { opacity: 1 }, delay: 0 },
         { type: 'instruction', node: objects[2], options: { fill: 'rgb(255, 211, 100)' } },
+        { type: 'step', caption: captions[1] },
+        { type: 'instruction', node: objects[13], options: { scaleX: 2, scaleY: 1.2, x: 300, y: objects[13].y() + 5 } },
+        { type: 'instruction', node: objects[12], options: { scaleX: 2, scaleY: 1.2, x: objects[12].x() + 30, y: objects[12].y() + 5 }, delay: 0 },
+        { type: 'instruction', node: objects[11], options: { scaleX: 2, scaleY: 1.2, x: objects[11].x() + 30, y: objects[11].y() + 5 }, delay: 0 },
         { type: 'step', caption: captions[2] },
     );
     steps = instructions.filter(({ type }) => type === 'step');
