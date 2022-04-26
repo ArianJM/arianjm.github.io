@@ -380,6 +380,7 @@ function processTweenEndCurried() {
         { type: 'instruction', node: objects[13], options: { scaleX: 2, scaleY: 1.2, x: 300, y: objects[13].y() + 5 } },
         { type: 'instruction', node: objects[12], options: { scaleX: 2, scaleY: 1.2, x: objects[12].x() + 30, y: objects[12].y() + 5 }, delay: 0 },
         { type: 'instruction', node: objects[11], options: { scaleX: 2, scaleY: 1.2, x: objects[11].x() + 30, y: objects[11].y() + 5 }, delay: 0 },
+        { type: 'step', caption: 'Another step' },
         { type: 'instruction', node: objects[5], options: { x: 0, y: 138 } },
         { type: 'instruction', node: objects[5], options: { x: 0, y: 154 } },
         { type: 'instruction', node: objects[5], options: { x: 0, y: 170 } },
