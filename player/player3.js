@@ -174,8 +174,38 @@ M 58 24 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0`,
         x: 130 + 33,
         y: 260 + 26,
     }),
-
 ];
+
+const imgObj = new Image();
+
+imgObj.onload = () => {
+    const konvaImage = new Konva.Image().setAttrs({
+        height: 160,
+        id: objects.length,
+        image: imgObj,
+        //offset: { x: 180, y: 115 },
+        width: 209,
+        x: 360,
+        y: 230,
+    });
+    objects.push(konvaImage);
+    layer.add(konvaImage);
+};
+const imgUrl = 'train.png';
+imgObj.src = imgUrl;
+
+Konva.Image.fromURL(imgUrl, node => {
+    debugger;
+    node.setAttrs({
+        height: 160,
+        width: 209,
+        x: 300,
+        y: 230,
+    });
+    objects.push(node);
+    layer.add(node);
+});
+debugger;
 
 objects.forEach((obj, index) => {
     obj.id(String(index));
@@ -338,6 +368,7 @@ function processTweenEndCurried() {
 
     instructions.push(
         { type: 'step', caption: captions[0] },
+        { type: 'instruction', node: objects[14], options: { rotate: 50 } },
         { type: 'instruction', node: objects[8], options: { scaleX: 40 / objects[6].width(), scaleY: 80 / objects[6].height(), x: objects[8].x() - 10, y: objects[8].y() + 16 } },
         { type: 'instruction', node: objects[3], options: { rotation: 30 } },
         { type: 'instruction', node: objects[1], options: { opacity: .33 } },
